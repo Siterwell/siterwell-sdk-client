@@ -84,7 +84,10 @@ class SwGateway internal constructor(private val messenger: Messenger, internal 
 
 
     /**
-     * This callback will be replace if call twice
+     * Request to list devices
+     *
+     * Use [org.greenrobot.eventbus.Subscribe] to subscribe response [DeviceListRespond]
+     *
      */
     fun listDevice() {
         try {
@@ -106,6 +109,10 @@ class SwGateway internal constructor(private val messenger: Messenger, internal 
 
 
 object SwSdk {
+
+    /**
+     * Connect to remote SwServer and provide a [SwGateway] to operate APIs
+     */
     @JvmOverloads
     @JvmStatic
     fun connect(context: Context, ondisconnect: () -> Unit = {}, onconnect: (SwGateway) -> Unit): SwServiceConnection {

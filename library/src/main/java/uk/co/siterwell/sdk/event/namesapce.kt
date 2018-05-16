@@ -10,7 +10,6 @@ sealed class Event
 
 data class DeviceListRespond(val deviceList: List<DeviceParcel>) : Event()
 
-
 interface DeviceListRespondHandler {
     @Subscribe
     fun OnListDevcideRespone(respond: DeviceListRespond)
