@@ -1,4 +1,4 @@
-package uk.co.siterwell.sdk.client
+package uk.co.siterwell.example.sdkclient
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4

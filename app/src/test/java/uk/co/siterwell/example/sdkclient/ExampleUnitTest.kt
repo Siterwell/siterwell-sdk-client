@@ -1,4 +1,4 @@
-package uk.co.siterwell.sdk.client
+package uk.co.siterwell.example.sdkclient
 
 import org.junit.Test
 
