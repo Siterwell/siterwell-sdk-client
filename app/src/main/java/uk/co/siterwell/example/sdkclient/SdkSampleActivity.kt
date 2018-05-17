@@ -16,7 +16,7 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
 
     lateinit var rootView: View
 
-    val listener: IDeviceCtrlListener = object : IDeviceCtrlListener.Stub() {
+    private val listener: IDeviceCtrlListener = object : IDeviceCtrlListener.Stub() {
         override fun onDeviceAdded(deviceParcel: DeviceParcel?) {
             runOnUiThread {
                 snackbar(rootView, "onDeviceAdded")
@@ -72,8 +72,14 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
         super.onStart()
         SwSdk.connect(this) { gateway ->
             gateway.startControlDevice(listener)
-//            also unregister listener
 //            gateway.stopControlDevice(listener)
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        SwSdk.connect(this) { gateway ->
+            gateway.stopControlDevice(listener)
         }
     }
 }

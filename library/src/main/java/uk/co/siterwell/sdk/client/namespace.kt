@@ -57,6 +57,9 @@ class SwServiceConnection(context: Context, val onconnect: (SwGateway) -> Unit, 
 class SwGateway internal constructor(private val service: ISwService, internal var bound: Boolean = true) : AnkoLogger {
     fun isBound() = bound
 
+    /**
+     * list all devices [DeviceParcel]
+     */
     fun listDevice(): List<DeviceParcel> {
         try {
             return service.listDevices().toList()
@@ -66,6 +69,14 @@ class SwGateway internal constructor(private val service: ISwService, internal v
         return emptyList()
     }
 
+    /**
+     * Start to control device
+     *
+     * this method will trigger the device controller to scan the device and wait the device respond
+     * and respond will invoke the given listener
+     * after finished the control flow (add, add more, remove), you should call  [stopControlDevice]
+     * to unregister and cancel scan
+     */
     fun startControlDevice(listener: IDeviceCtrlListener) {
         try {
             service.registerDeviceCtrlLisener(listener)
@@ -76,6 +87,11 @@ class SwGateway internal constructor(private val service: ISwService, internal v
     }
 
 
+    /**
+     * Stop the controller flow
+     *
+     * unregister [listener] and cancel scan
+     */
     fun stopControlDevice(listener: IDeviceCtrlListener) {
         try {
             service.unregisterDeviceCtrlLisener(listener)
