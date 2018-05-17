@@ -6,8 +6,7 @@ import uk.co.siterwell.sdk.share.IDeviceCtrlListener;
 
 interface ISwService {
     List<DeviceParcel> listDevices();
-    void startControlDevice();
-    void stopControlDevice();
+    void controlDevice(int command);
 
     void registerDeviceCtrlLisener(IDeviceCtrlListener lisenter);
     void unregisterDeviceCtrlLisener(IDeviceCtrlListener lisenter);

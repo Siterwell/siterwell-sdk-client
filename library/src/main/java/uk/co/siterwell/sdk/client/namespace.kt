@@ -8,8 +8,12 @@ import android.os.IBinder
 import android.os.RemoteException
 import com.google.gson.Gson
 import org.jetbrains.anko.AnkoLogger
+import org.jetbrains.anko.debug
 import org.jetbrains.anko.error
 import org.jetbrains.anko.info
+import uk.co.siterwell.sdk.data.Add
+import uk.co.siterwell.sdk.data.Cancel
+import uk.co.siterwell.sdk.data.Remove
 import uk.co.siterwell.sdk.share.DeviceParcel
 import uk.co.siterwell.sdk.share.IDeviceCtrlListener
 import uk.co.siterwell.sdk.share.ISwService
@@ -75,15 +79,14 @@ class SwGateway internal constructor(private val service: ISwService, internal v
      * this method will trigger the device controller to scan the device and wait the device respond
      * and respond will invoke the given listener
      * after finished the control flow (add, add more, remove), you should call  [stopControlDevice]
+     *
+     * The behaviours same as [startAddControlDevice]
+     *
      * to unregister and cancel scan
      */
     fun startControlDevice(listener: IDeviceCtrlListener) {
-        try {
-            service.registerDeviceCtrlLisener(listener)
-            service.startControlDevice()
-        } catch (e: RemoteException) {
-            error { e }
-        }
+        debug { "startControlDevice" }
+        startAddControlDevice(listener)
     }
 
 
@@ -94,10 +97,31 @@ class SwGateway internal constructor(private val service: ISwService, internal v
      */
     fun stopControlDevice(listener: IDeviceCtrlListener) {
         try {
+            debug { "stopControlDevice" }
             service.unregisterDeviceCtrlLisener(listener)
-            service.stopControlDevice()
+            service.controlDevice(Cancel())
         } catch (e: RemoteException) {
-            error { e }
+            error { "error: ${e.message}" }
+        }
+    }
+
+    fun startAddControlDevice(listener: IDeviceCtrlListener) {
+        try {
+            debug { "startAddControlDevice" }
+            service.registerDeviceCtrlLisener(listener)
+            service.controlDevice(Add())
+        } catch (e: RemoteException) {
+            error { "error: ${e.message}" }
+        }
+    }
+
+    fun startRemoveControlDevice(listener: IDeviceCtrlListener) {
+        try {
+            debug { "startRemoveControlDevice" }
+            service.registerDeviceCtrlLisener(listener)
+            service.controlDevice(Remove())
+        } catch (e: RemoteException) {
+            error { "error: ${e.message}" }
         }
     }
 }
