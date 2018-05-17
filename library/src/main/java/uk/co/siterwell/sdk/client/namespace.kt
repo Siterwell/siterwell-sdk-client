@@ -4,14 +4,15 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.os.*
+import android.os.IBinder
+import android.os.RemoteException
 import com.google.gson.Gson
-import org.greenrobot.eventbus.EventBus
 import org.jetbrains.anko.AnkoLogger
 import org.jetbrains.anko.error
 import org.jetbrains.anko.info
-import uk.co.siterwell.sdk.data.DeviceParcel
-import uk.co.siterwell.sdk.event.DeviceListRespond
+import uk.co.siterwell.sdk.share.DeviceParcel
+import uk.co.siterwell.sdk.share.IDeviceCtrlListener
+import uk.co.siterwell.sdk.share.ISwService
 
 
 val gson = Gson()
@@ -32,12 +33,7 @@ class SwServiceConnection(context: Context, val onconnect: (SwGateway) -> Unit, 
                 object : ServiceConnection {
                     override fun onServiceConnected(className: ComponentName, service: IBinder) {
                         info { "SwSdk Connected" }
-                        // This is called when the connection with the service has been
-                        // established, giving us the object we can use to
-                        // interact with the service.  We are communicating with the
-                        // service using a Messenger, so here we get a client-side
-                        // representation of that from the raw IBinder object.
-                        gateway = SwGateway(Messenger(service))
+                        gateway = SwGateway(ISwService.Stub.asInterface(service))
                         onconnect(gateway)
                     }
 
@@ -54,62 +50,44 @@ class SwServiceConnection(context: Context, val onconnect: (SwGateway) -> Unit, 
 }
 
 
-const val WHAT_LIST_DEVICE = 1
-const val WHAT_LIST_DEVICE_RES = 2
-
 /**
  * SwGateway provide an interface to client
  * it should pack by another module
  */
-class SwGateway internal constructor(private val messenger: Messenger, internal var bound: Boolean = true) : AnkoLogger {
+class SwGateway internal constructor(private val service: ISwService, internal var bound: Boolean = true) : AnkoLogger {
+    fun isBound() = bound
 
-    class ClientResponseHandler : Handler(), AnkoLogger {
-        override fun handleMessage(msg: Message) {
-            info { "receive what: ${msg.what}" }
-            try {
-                when {
-                    msg.what == WHAT_LIST_DEVICE_RES -> {
-                        val data = msg.data
-                        data.classLoader = DeviceParcel::class.java.classLoader
-                        EventBus.getDefault().post(DeviceListRespond(data.getParcelableArrayList<DeviceParcel>("obj")))
-                    }
-                    else -> {
-                    }
-                }
-            } catch (e: Exception) {
-                error("", e)
-            }
+    fun listDevice(): List<DeviceParcel> {
+        try {
+            return service.listDevices().toList()
+        } catch (e: RemoteException) {
+            error { e }
         }
+        return emptyList()
     }
 
-
-    /**
-     * Request to list devices
-     *
-     * Use [org.greenrobot.eventbus.Subscribe] to subscribe response [DeviceListRespond]
-     *
-     */
-    fun listDevice() {
+    fun startControlDevice(listener: IDeviceCtrlListener) {
         try {
-            messenger.send(listDeviceMessage())
+            service.registerDeviceCtrlLisener(listener)
+            service.startControlDevice()
         } catch (e: RemoteException) {
             error { e }
         }
     }
 
 
-    private fun listDeviceMessage(): Message? {
-        return Message.obtain(null, WHAT_LIST_DEVICE).apply {
-            replyTo = Messenger(ClientResponseHandler())
+    fun stopControlDevice(listener: IDeviceCtrlListener) {
+        try {
+            service.unregisterDeviceCtrlLisener(listener)
+            service.stopControlDevice()
+        } catch (e: RemoteException) {
+            error { e }
         }
     }
-
-    fun isBound() = bound
 }
 
 
 object SwSdk {
-
     /**
      * Connect to remote SwServer and provide a [SwGateway] to operate APIs
      */

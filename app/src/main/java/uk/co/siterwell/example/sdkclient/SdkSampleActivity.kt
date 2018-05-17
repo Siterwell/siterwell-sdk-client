@@ -3,26 +3,60 @@ package uk.co.siterwell.example.sdkclient
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
-import org.greenrobot.eventbus.EventBus
-import org.greenrobot.eventbus.Subscribe
+import android.view.View
 import org.jetbrains.anko.AnkoLogger
+import org.jetbrains.anko.design.snackbar
 import org.jetbrains.anko.info
 import uk.co.siterwell.sdk.client.SwSdk
-import uk.co.siterwell.sdk.event.DeviceListRespond
-import uk.co.siterwell.sdk.event.DeviceListRespondHandler
+import uk.co.siterwell.sdk.share.DeviceParcel
+import uk.co.siterwell.sdk.share.IDeviceCtrlListener
 
 
-class SdkSampleActivity : AppCompatActivity(), AnkoLogger, DeviceListRespondHandler {
+class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
+
+    lateinit var rootView: View
+
+    val listener: IDeviceCtrlListener = object : IDeviceCtrlListener.Stub() {
+        override fun onDeviceAdded(deviceParcel: DeviceParcel?) {
+            runOnUiThread {
+                snackbar(rootView, "onDeviceAdded")
+            }
+        }
+
+        override fun onDeviceQueried(nodeId: String?) {
+            runOnUiThread {
+                snackbar(window.decorView, "onDeviceQueried")
+            }
+        }
+
+        override fun onDeviceSlept(nodeId: String?) {
+            runOnUiThread {
+                snackbar(window.decorView, "onDeviceSlept")
+            }
+        }
+
+        override fun onOperationFailed() {
+            runOnUiThread {
+                snackbar(window.decorView, "onOperationFailed")
+            }
+        }
+
+        override fun onDeviceRemoved(deviceParcel: DeviceParcel?) {
+            runOnUiThread {
+                snackbar(window.decorView, "onDeviceRemoved")
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sdk_sample)
 
-        EventBus.getDefault().register(this)
+        rootView = window.decorView
 
         SwSdk.connect(this) { gateway ->
             info { "gateway bound: ${gateway.isBound()}" }
-            gateway.listDevice()
+            info { gateway.listDevice() }
         }
     }
 
@@ -30,15 +64,17 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger, DeviceListRespondHand
         super.onNewIntent(intent)
         SwSdk.connect(this) { gateway ->
             info { "gateway bound: ${gateway.isBound()}" }
-
-            gateway.listDevice()
+            info { gateway.listDevice() }
         }
     }
 
-    @Subscribe
-    override fun OnListDevcideRespone(respond: DeviceListRespond) {
-        respond.deviceList.forEach {
-            Log.d(loggerTag, it.toString())
+    override fun onStart() {
+        super.onStart()
+        SwSdk.connect(this) { gateway ->
+            gateway.startControlDevice(listener)
+//            also unregister listener
+//            gateway.stopControlDevice(listener)
         }
     }
 }
+
