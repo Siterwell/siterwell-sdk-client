@@ -16,6 +16,7 @@ import uk.co.siterwell.sdk.data.Cancel
 import uk.co.siterwell.sdk.data.Remove
 import uk.co.siterwell.sdk.share.DeviceParcel
 import uk.co.siterwell.sdk.share.IDeviceCtrlListener
+import uk.co.siterwell.sdk.share.IDeviceValueChangeListener
 import uk.co.siterwell.sdk.share.ISwService
 import java.lang.ref.WeakReference
 
@@ -27,6 +28,11 @@ val gson = Gson()
  */
 class SwServiceConnection(context: Context, private val autounbind: Boolean = true, private val onconnect: (SwGateway) -> Unit, private val ondisconnect: () -> Unit) : AnkoLogger {
     lateinit var gateway: SwGateway
+    private val contextRef = WeakReference(context.applicationContext)
+    private val intent = Intent().apply {
+        action = "uk.co.siterwell.SwService.BIND"
+        `package` = "uk.co.siterwell.homedashboard"
+    }
 
     private val connection: ServiceConnection =
             object : ServiceConnection {
@@ -46,18 +52,11 @@ class SwServiceConnection(context: Context, private val autounbind: Boolean = tr
                     gateway.bound = false
                     ondisconnect()
                 }
-            }.apply {
+            }.also {
                 contextRef.get()?.bindService(intent,
-                        this,
+                        it,
                         Context.BIND_AUTO_CREATE)
             }
-
-
-    private val contextRef = WeakReference(context.applicationContext)
-    private val intent = Intent().apply {
-        action = "uk.co.siterwell.SwService.BIND"
-        `package` = "uk.co.siterwell.homedashboard"
-    }
 
     fun unbind() {
         contextRef.get()?.unbindService(connection)
@@ -135,6 +134,24 @@ class SwGateway internal constructor(private val service: ISwService, internal v
             debug { "startRemoveControlDevice" }
             service.registerDeviceCtrlLisener(listener)
             service.controlDevice(Remove())
+        } catch (e: RemoteException) {
+            error { "error: ${e.message}" }
+        }
+    }
+
+    fun registerDevcieValueChangeListener(lisenter: IDeviceValueChangeListener) {
+        try {
+            debug { "registerDevcieValueChangeListener" }
+            service.registerDeviceValueChangeLisener(lisenter)
+        } catch (e: RemoteException) {
+            error { "error: ${e.message}" }
+        }
+    }
+
+    fun unregisterDevcieValueChangeListener(lisenter: IDeviceValueChangeListener) {
+        try {
+            debug { "unregisterDevcieValueChangeListener" }
+            service.unregisterDeviceValueChangeLisener(lisenter)
         } catch (e: RemoteException) {
             error { "error: ${e.message}" }
         }

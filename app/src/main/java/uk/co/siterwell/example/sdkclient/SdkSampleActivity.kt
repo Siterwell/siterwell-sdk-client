@@ -12,15 +12,19 @@ import org.jetbrains.anko.info
 import org.jetbrains.anko.sdk25.coroutines.onClick
 import uk.co.siterwell.sdk.client.SwSdk
 import uk.co.siterwell.sdk.client.SwServiceConnection
+import uk.co.siterwell.sdk.share.DeviceChangeEvent
 import uk.co.siterwell.sdk.share.DeviceParcel
 import uk.co.siterwell.sdk.share.IDeviceCtrlListener
+import uk.co.siterwell.sdk.share.IDeviceValueChangeListener
 
 
 class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
 
     lateinit var rootView: View
     lateinit var deviceAdapter: DeviceAdapter
-    var connection :SwServiceConnection? = null
+    var connection: SwServiceConnection? = null
+
+    private lateinit var valueChangelistener: IDeviceValueChangeListener;
 
     private val listener: IDeviceCtrlListener = object : IDeviceCtrlListener.Stub() {
         override fun onDeviceAdded(deviceParcel: DeviceParcel?) {
@@ -65,19 +69,29 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
         setContentView(R.layout.activity_sdk_sample)
 
         rootView = window.decorView
-        deviceAdapter = DeviceAdapter()
 
-        with(rvDevices) {
-            adapter = deviceAdapter
-            layoutManager = LinearLayoutManager(this@SdkSampleActivity)
-            setHasFixedSize(true)
-        }
-
-        connection = SwSdk.connect(this) { gateway ->
+        SwSdk.connect(this) { gateway ->
             info { "gateway bound: ${gateway.isBound()}" }
             val listDevice = gateway.listDevice()
             info { listDevice }
-            deviceAdapter.udpate(listDevice)
+
+            valueChangelistener = object : IDeviceValueChangeListener.Stub() {
+                override fun onValueChange(e: DeviceChangeEvent?) {
+                    info { "IDeviceValueChangeListener called $e" }
+                    deviceAdapter.udpate(gateway.listDevice())
+                }
+            }
+            gateway.registerDevcieValueChangeListener(valueChangelistener)
+
+            deviceAdapter = DeviceAdapter(deviceList = listDevice, onToggleActivate = { d ->
+                gateway.activeDevice(d.nodeUid, !d.activate)
+            })
+
+            with(rvDevices) {
+                adapter = deviceAdapter
+                layoutManager = LinearLayoutManager(this@SdkSampleActivity)
+                setHasFixedSize(true)
+            }
 
             add.onClick {
                 if (gateway.isBound()) {
@@ -120,8 +134,6 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
         SwSdk.connect(this) { gateway ->
             gateway.stopControlDevice(listener)
         }
-
-        connection?.unbind()
     }
 }
 

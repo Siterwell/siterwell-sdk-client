@@ -20,12 +20,14 @@
         app:layout_constraintVertical_bias="0.0"
         tools:text="DeviceName" />
 
-    <Button
-        android:id="@+id/button"
+    <ToggleButton
+        android:id="@+id/btn_activate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:text="Activate"
+        android:text="ToggleButton"
+        android:textOn="Activate"
+        android:textOff="Deactivate"
         app:layout_constraintBottom_toBottomOf="@+id/tv_device_name"
         app:layout_constraintStart_toEndOf="@+id/tv_device_name"
         app:layout_constraintTop_toTopOf="@+id/tv_device_name" />
