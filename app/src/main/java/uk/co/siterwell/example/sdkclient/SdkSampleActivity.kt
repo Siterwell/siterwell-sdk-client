@@ -11,6 +11,7 @@ import org.jetbrains.anko.design.snackbar
 import org.jetbrains.anko.info
 import org.jetbrains.anko.sdk25.coroutines.onClick
 import uk.co.siterwell.sdk.client.SwSdk
+import uk.co.siterwell.sdk.client.SwServiceConnection
 import uk.co.siterwell.sdk.share.DeviceParcel
 import uk.co.siterwell.sdk.share.IDeviceCtrlListener
 
@@ -19,6 +20,7 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
 
     lateinit var rootView: View
     lateinit var deviceAdapter: DeviceAdapter
+    var connection :SwServiceConnection? = null
 
     private val listener: IDeviceCtrlListener = object : IDeviceCtrlListener.Stub() {
         override fun onDeviceAdded(deviceParcel: DeviceParcel?) {
@@ -71,7 +73,7 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
             setHasFixedSize(true)
         }
 
-        SwSdk.connect(this) { gateway ->
+        connection = SwSdk.connect(this) { gateway ->
             info { "gateway bound: ${gateway.isBound()}" }
             val listDevice = gateway.listDevice()
             info { listDevice }
@@ -96,7 +98,6 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
                 }
             }
         }
-
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -119,6 +120,8 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
         SwSdk.connect(this) { gateway ->
             gateway.stopControlDevice(listener)
         }
+
+        connection?.unbind()
     }
 }
 

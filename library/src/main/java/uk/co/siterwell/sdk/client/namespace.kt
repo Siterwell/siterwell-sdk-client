@@ -17,6 +17,7 @@ import uk.co.siterwell.sdk.data.Remove
 import uk.co.siterwell.sdk.share.DeviceParcel
 import uk.co.siterwell.sdk.share.IDeviceCtrlListener
 import uk.co.siterwell.sdk.share.ISwService
+import java.lang.ref.WeakReference
 
 
 val gson = Gson()
@@ -24,32 +25,42 @@ val gson = Gson()
 /**
  * SwServciceConnection provide a SwGateway
  */
-class SwServiceConnection(context: Context, val onconnect: (SwGateway) -> Unit, ondisconnect: () -> Unit) : AnkoLogger {
-    private lateinit var gateway: SwGateway
+class SwServiceConnection(context: Context, private val autounbind: Boolean = true, private val onconnect: (SwGateway) -> Unit, private val ondisconnect: () -> Unit) : AnkoLogger {
+    lateinit var gateway: SwGateway
 
-    init {
-        info { "Start Connection" }
-        val intent = Intent().apply {
-            action = "uk.co.siterwell.SwService.BIND"
-            `package` = "uk.co.siterwell.homedashboard"
-        }
-        context.applicationContext.bindService(intent,
-                object : ServiceConnection {
-                    override fun onServiceConnected(className: ComponentName, service: IBinder) {
-                        info { "SwSdk Connected" }
-                        gateway = SwGateway(ISwService.Stub.asInterface(service))
-                        onconnect(gateway)
+    private val connection: ServiceConnection =
+            object : ServiceConnection {
+                override fun onServiceConnected(className: ComponentName, service: IBinder) {
+                    info { "SwSdk Connected" }
+                    gateway = SwGateway(ISwService.Stub.asInterface(service))
+                    onconnect(gateway)
+                    if (autounbind) {
+                        unbind()
                     }
+                }
 
-                    override fun onServiceDisconnected(className: ComponentName) {
-                        info { "SwSdk Disconnected" }
-                        // This is called when the connection with the service has been
-                        // unexpectedly disconnected -- that is, its process crashed.
-                        gateway.bound = false
-                        ondisconnect()
-                    }
-                },
-                Context.BIND_AUTO_CREATE)
+                override fun onServiceDisconnected(className: ComponentName) {
+                    info { "SwSdk Disconnected" }
+                    // This is called when the connection with the service has been
+                    // unexpectedly disconnected -- that is, its process crashed.
+                    gateway.bound = false
+                    ondisconnect()
+                }
+            }.apply {
+                contextRef.get()?.bindService(intent,
+                        this,
+                        Context.BIND_AUTO_CREATE)
+            }
+
+
+    private val contextRef = WeakReference(context.applicationContext)
+    private val intent = Intent().apply {
+        action = "uk.co.siterwell.SwService.BIND"
+        `package` = "uk.co.siterwell.homedashboard"
+    }
+
+    fun unbind() {
+        contextRef.get()?.unbindService(connection)
     }
 }
 
@@ -71,6 +82,10 @@ class SwGateway internal constructor(private val service: ISwService, internal v
             error { e }
         }
         return emptyList()
+    }
+
+    fun activeDevice(nodeUid: String, activate: Boolean) {
+        service.activeDevice(nodeUid, activate)
     }
 
     /**
@@ -133,8 +148,8 @@ object SwSdk {
      */
     @JvmOverloads
     @JvmStatic
-    fun connect(context: Context, ondisconnect: () -> Unit = {}, onconnect: (SwGateway) -> Unit): SwServiceConnection {
-        return SwServiceConnection(context, onconnect, ondisconnect)
+    fun connect(context: Context, autounbind: Boolean = true, ondisconnect: () -> Unit = {}, onconnect: (SwGateway) -> Unit): SwServiceConnection {
+        return SwServiceConnection(context, autounbind, onconnect, ondisconnect)
     }
 }
 

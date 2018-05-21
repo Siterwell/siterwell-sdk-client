@@ -18,5 +18,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.0"
-        tools:text="TextView" />
+        tools:text="DeviceName" />
+
+    <Button
+        android:id="@+id/button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:text="Activate"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_device_name"
+        app:layout_constraintStart_toEndOf="@+id/tv_device_name"
+        app:layout_constraintTop_toTopOf="@+id/tv_device_name" />
+
 </android.support.constraint.ConstraintLayout>
