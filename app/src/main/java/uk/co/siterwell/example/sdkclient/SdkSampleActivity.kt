@@ -26,43 +26,7 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
 
     private lateinit var valueChangelistener: IDeviceValueChangeListener;
 
-    private val listener: IDeviceCtrlListener = object : IDeviceCtrlListener.Stub() {
-        override fun onDeviceAdded(deviceParcel: DeviceParcel?) {
-            SwSdk.connect(this@SdkSampleActivity) { gateway ->
-                deviceAdapter.udpate(gateway.listDevice())
-                runOnUiThread {
-                    snackbar(rootView, "onDeviceAdded").show()
-                }
-            }
-        }
-
-        override fun onDeviceQueried(nodeId: String?) {
-            runOnUiThread {
-                snackbar(window.decorView, "onDeviceQueried").show()
-            }
-        }
-
-        override fun onDeviceSlept(nodeId: String?) {
-            runOnUiThread {
-                snackbar(window.decorView, "onDeviceSlept").show()
-            }
-        }
-
-        override fun onOperationFailed() {
-            runOnUiThread {
-                snackbar(window.decorView, "onOperationFailed").show()
-            }
-        }
-
-        override fun onDeviceRemoved(deviceParcel: DeviceParcel?) {
-            SwSdk.connect(this@SdkSampleActivity) { gateway ->
-                deviceAdapter.udpate(gateway.listDevice())
-                runOnUiThread {
-                    snackbar(window.decorView, "onDeviceRemoved").show()
-                }
-            }
-        }
-    }
+    private lateinit var listener: IDeviceCtrlListener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,6 +51,41 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
                     }
                 }
             }
+
+            listener = object : IDeviceCtrlListener.Stub() {
+                override fun onDeviceAdded(deviceParcel: DeviceParcel?) {
+                    deviceAdapter.udpate(gateway.listDevice())
+                    runOnUiThread {
+                        snackbar(rootView, "onDeviceAdded").show()
+                    }
+                }
+
+                override fun onDeviceQueried(nodeId: String?) {
+                    runOnUiThread {
+                        snackbar(window.decorView, "onDeviceQueried").show()
+                    }
+                }
+
+                override fun onDeviceSlept(nodeId: String?) {
+                    runOnUiThread {
+                        snackbar(window.decorView, "onDeviceSlept").show()
+                    }
+                }
+
+                override fun onOperationFailed() {
+                    runOnUiThread {
+                        snackbar(window.decorView, "onOperationFailed").show()
+                    }
+                }
+
+                override fun onDeviceRemoved(deviceParcel: DeviceParcel?) {
+                    deviceAdapter.udpate(gateway.listDevice())
+                    runOnUiThread {
+                        snackbar(window.decorView, "onDeviceRemoved").show()
+                    }
+                }
+            }
+
             gateway.registerDeviceValueChangeListener(valueChangelistener)
 
             deviceAdapter = DeviceAdapter(deviceList = listDevice, onToggleActivate = { d ->
@@ -112,7 +111,6 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
                 }
             }
 
-
             stop.onClick {
                 if (gateway.isBound()) {
                     gateway.stopControlDevice(listener)
@@ -133,18 +131,6 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
         connection?.unbind()
         connection = null
         initViews()
-
-        SwSdk.connect(this) { gateway ->
-            info { "gateway bound: ${gateway.isBound()}" }
-            info { gateway.listDevice() }
-        }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        SwSdk.connect(this) { gateway ->
-            gateway.startControlDevice(listener)
-        }
     }
 
     override fun onDestroy() {
