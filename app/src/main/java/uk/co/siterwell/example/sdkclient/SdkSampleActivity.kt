@@ -70,27 +70,34 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
 
         rootView = window.decorView
 
-        SwSdk.connect(this) { gateway ->
+        initViews()
+    }
+
+    private fun initViews() {
+        connection = SwSdk.connect(this, false) { gateway ->
             info { "gateway bound: ${gateway.isBound()}" }
             val listDevice = gateway.listDevice()
             info { listDevice }
 
             valueChangelistener = object : IDeviceValueChangeListener.Stub() {
                 override fun onValueChange(e: DeviceChangeEvent?) {
-                    info { "IDeviceValueChangeListener called $e" }
-                    deviceAdapter.udpate(gateway.listDevice())
+                    runOnUiThread {
+                        info { "IDeviceValueChangeListener called $e" }
+                        deviceAdapter.udpate(gateway.listDevice())
+                    }
                 }
             }
-            gateway.registerDevcieValueChangeListener(valueChangelistener)
+            gateway.registerDeviceValueChangeListener(valueChangelistener)
 
             deviceAdapter = DeviceAdapter(deviceList = listDevice, onToggleActivate = { d ->
-                gateway.activeDevice(d.nodeUid, !d.activate)
+                if (gateway.isBound()) {
+                    gateway.activeDevice(d.nodeUid, !d.activate)
+                }
             })
 
             with(rvDevices) {
                 adapter = deviceAdapter
                 layoutManager = LinearLayoutManager(this@SdkSampleActivity)
-                setHasFixedSize(true)
             }
 
             add.onClick {
@@ -111,11 +118,22 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
                     gateway.stopControlDevice(listener)
                 }
             }
+
+            reset.onClick {
+                if (gateway.isBound()) {
+                    gateway.resetDevice(listener)
+                }
+            }
         }
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
+
+        connection?.unbind()
+        connection = null
+        initViews()
+
         SwSdk.connect(this) { gateway ->
             info { "gateway bound: ${gateway.isBound()}" }
             info { gateway.listDevice() }
@@ -134,6 +152,8 @@ class SdkSampleActivity : AppCompatActivity(), AnkoLogger {
         SwSdk.connect(this) { gateway ->
             gateway.stopControlDevice(listener)
         }
+
+        connection?.unbind()
     }
 }
 

@@ -10,3 +10,4 @@ sealed class DeviceCtrlCommand(private val v: Int) {
 object Cancel : DeviceCtrlCommand(0)
 object Add : DeviceCtrlCommand(1)
 object Remove : DeviceCtrlCommand(2)
+object Reset : DeviceCtrlCommand(3)

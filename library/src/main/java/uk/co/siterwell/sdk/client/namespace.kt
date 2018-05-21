@@ -14,6 +14,7 @@ import org.jetbrains.anko.info
 import uk.co.siterwell.sdk.data.Add
 import uk.co.siterwell.sdk.data.Cancel
 import uk.co.siterwell.sdk.data.Remove
+import uk.co.siterwell.sdk.data.Reset
 import uk.co.siterwell.sdk.share.DeviceParcel
 import uk.co.siterwell.sdk.share.IDeviceCtrlListener
 import uk.co.siterwell.sdk.share.IDeviceValueChangeListener
@@ -139,23 +140,35 @@ class SwGateway internal constructor(private val service: ISwService, internal v
         }
     }
 
-    fun registerDevcieValueChangeListener(lisenter: IDeviceValueChangeListener) {
+
+    fun resetDevice(listener: IDeviceCtrlListener) {
         try {
-            debug { "registerDevcieValueChangeListener" }
+            debug { "resetDevice" }
+            service.registerDeviceCtrlLisener(listener)
+            service.controlDevice(Reset())
+        } catch (e: RemoteException) {
+            error { "error: ${e.message}" }
+        }
+    }
+
+    fun registerDeviceValueChangeListener(lisenter: IDeviceValueChangeListener) {
+        try {
+            debug { "registerDeviceValueChangeListener" }
             service.registerDeviceValueChangeLisener(lisenter)
         } catch (e: RemoteException) {
             error { "error: ${e.message}" }
         }
     }
 
-    fun unregisterDevcieValueChangeListener(lisenter: IDeviceValueChangeListener) {
+    fun unregisterDeviceValueChangeListener(lisenter: IDeviceValueChangeListener) {
         try {
-            debug { "unregisterDevcieValueChangeListener" }
+            debug { "unregisterDeviceValueChangeListener" }
             service.unregisterDeviceValueChangeLisener(lisenter)
         } catch (e: RemoteException) {
             error { "error: ${e.message}" }
         }
     }
+
 }
 
 
@@ -167,6 +180,10 @@ object SwSdk {
     @JvmStatic
     fun connect(context: Context, autounbind: Boolean = true, ondisconnect: () -> Unit = {}, onconnect: (SwGateway) -> Unit): SwServiceConnection {
         return SwServiceConnection(context, autounbind, onconnect, ondisconnect)
+    }
+
+    fun disconnect(connection: SwServiceConnection) {
+        connection.unbind()
     }
 }
 
